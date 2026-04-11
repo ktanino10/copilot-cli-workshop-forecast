@@ -1,4 +1,4 @@
-# 📊 Workshop Forecast Dashboard
+# 📊 Workshop Forecast Dashboard — Built with GitHub Copilot CLI
 
 GitHub Workshop の登録者数をリアルタイムで可視化・予測するダッシュボード。  
 閃光のハサウェイ風コックピットHUD UIを採用。
