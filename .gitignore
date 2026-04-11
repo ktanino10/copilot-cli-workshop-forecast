@@ -1,0 +1,11 @@
+# === 生データ（個人情報を含むCSV）===
+*.csv
+
+# === 画像出力（再生成可能）===
+*.png
+
+# === 旧ダッシュボード ===
+forecast_dashboard.html
+
+# === macOS ===
+.DS_Store

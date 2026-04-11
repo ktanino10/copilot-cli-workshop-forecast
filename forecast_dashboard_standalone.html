@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitHub Workshop 登録者予測ダッシュボード</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt" crossorigin="anonymous"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #050a0e;
+  --bg-secondary: rgba(0, 255, 213, 0.03);
+  --border: rgba(0, 255, 213, 0.15);
+  --text-primary: #c0e8d8;
+  --text-secondary: #4a7a6a;
+  --cyan: #00ffd5;
+  --amber: #ffa500;
+  --red: #ff3366;
+  --blue: #00aaff;
+  --pink: #ff69b4;
+  --purple: #7b68ee;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg-primary);
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0,255,213,0.04) 39px, rgba(0,255,213,0.04) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(0,255,213,0.04) 39px, rgba(0,255,213,0.04) 40px);
+  color: var(--text-primary);
+  min-height: 100vh;
+  padding: 24px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: rgba(0,255,213,0.08);
+  z-index: 9998;
+  pointer-events: none;
+  animation: scanline 4s linear infinite;
+}
+
+@keyframes scanline {
+  0% { top: 0; }
+  100% { top: 100vh; }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dashboard { max-width: 1400px; margin: 0 auto; }
+
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, rgba(0,255,213,0.08) 0%, rgba(0,100,150,0.08) 100%);
+  border-radius: 0;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+  clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(circle at 30% 50%, rgba(0,255,213,0.05) 0%, transparent 50%);
+  animation: pulse 4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+.header h1 {
+  font-size: 28px;
+  font-weight: 800;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  letter-spacing: 3px;
+  color: var(--cyan);
+  text-shadow: 0 0 20px rgba(0,255,213,0.4);
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.header .subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  position: relative;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  letter-spacing: 1px;
+}
+
+.change-csv-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: transparent;
+  border: 1px solid rgba(0,255,213,0.3);
+  color: var(--cyan);
+  padding: 6px 14px;
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: 'Share Tech Mono', monospace;
+  z-index: 10;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.change-csv-btn:hover {
+  background: rgba(0,255,213,0.1);
+  border-color: var(--cyan);
+  box-shadow: 0 0 15px rgba(0,255,213,0.2);
+}
+
+.demo-btn {
+  position: absolute;
+  top: 16px;
+  right: 170px;
+  background: transparent;
+  border: 1px solid rgba(0,255,213,0.3);
+  color: var(--cyan);
+  padding: 6px 14px;
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: 'Share Tech Mono', monospace;
+  z-index: 10;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.demo-btn:hover {
+  background: rgba(0,255,213,0.1);
+  border-color: var(--cyan);
+}
+.demo-btn.active {
+  background: rgba(255,165,0,0.15);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.demo-badge {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  color: var(--amber);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 2px;
+  z-index: 9999;
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+.event-date-group {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+}
+.event-date-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.event-date-input {
+  background: rgba(0,255,213,0.05);
+  border: 1px solid rgba(0,255,213,0.25);
+  color: var(--cyan);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 13px;
+  padding: 5px 10px;
+  border-radius: 0;
+  outline: none;
+  transition: all 0.2s;
+  width: 150px;
+}
+.event-date-input:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px rgba(0,255,213,0.2);
+}
+.event-date-input::-webkit-calendar-picker-indicator {
+  filter: invert(0.7) sepia(1) saturate(3) hue-rotate(130deg);
+  cursor: pointer;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.kpi-card {
+  background: var(--bg-secondary);
+  border: 1px solid rgba(0,255,213,0.2);
+  border-radius: 0;
+  padding: 24px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  transition: transform 0.2s, box-shadow 0.2s;
+  clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+  box-shadow: inset 0 0 20px rgba(0,255,213,0.05), 0 0 15px rgba(0,255,213,0.05);
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: inset 0 0 30px rgba(0,255,213,0.08), 0 0 25px rgba(0,255,213,0.1);
+}
+.kpi-card .label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+.kpi-card .label::before {
+  content: '● ';
+  color: var(--cyan);
+  animation: blink 2s ease-in-out infinite;
+  display: inline;
+}
+.kpi-card .value {
+  font-size: 38px;
+  font-weight: 800;
+  font-family: 'Share Tech Mono', 'Courier New', 'Consolas', monospace;
+  letter-spacing: -1px;
+  color: var(--cyan);
+  text-shadow: 0 0 10px rgba(0,255,213,0.5);
+}
+.kpi-card .sub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  font-family: 'Share Tech Mono', monospace;
+}
+.kpi-card.blue .value { color: var(--cyan); }
+.kpi-card.green .value { color: var(--cyan); text-shadow: 0 0 10px rgba(0,255,213,0.5); }
+.kpi-card.purple .value { color: var(--cyan); }
+.kpi-card.orange .value { color: var(--amber); text-shadow: 0 0 10px rgba(255,165,0,0.5); }
+.kpi-card.pink .value { color: var(--cyan); }
+
+.chart-container {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  padding: 24px;
+  margin-bottom: 24px;
+  backdrop-filter: blur(10px);
+  position: relative;
+}
+.chart-container::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 20px; height: 20px;
+  border-top: 2px solid var(--cyan);
+  border-left: 2px solid var(--cyan);
+  pointer-events: none;
+}
+.chart-container::after {
+  content: '';
+  position: absolute;
+  bottom: 0; right: 0;
+  width: 20px; height: 20px;
+  border-bottom: 2px solid var(--cyan);
+  border-right: 2px solid var(--cyan);
+  pointer-events: none;
+}
+.chart-container h2 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--cyan);
+  font-family: 'Share Tech Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.chart-container h2::before { content: '━━ '; color: var(--text-secondary); }
+.chart-container h2::after { content: ' ━━'; color: var(--text-secondary); }
+
+.chart-wrapper {
+  position: relative;
+  height: 400px;
+}
+
+.forecast-note {
+  background: rgba(0,255,213,0.03);
+  border: 1px solid rgba(0,255,213,0.15);
+  border-radius: 0;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  line-height: 1.6;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.scenario-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+}
+.scenario-table th, .scenario-table td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid rgba(0,255,213,0.1);
+  font-size: 14px;
+}
+.scenario-table th {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-family: 'Share Tech Mono', monospace;
+  background: rgba(0,255,213,0.05);
+}
+.scenario-table td { color: var(--text-primary); font-family: 'Share Tech Mono', monospace; }
+.scenario-table tr:hover td { background: rgba(0,255,213,0.03); }
+.scenario-table tr.optimistic td { color: var(--cyan); }
+.scenario-table tr.baseline td { color: var(--amber); }
+.scenario-table tr.pessimistic td { color: var(--red); }
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+@media (max-width: 900px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+.company-list { list-style: none; }
+.company-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,255,213,0.08);
+  font-size: 14px;
+}
+.company-rank {
+  width: 28px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: 'Share Tech Mono', monospace;
+}
+.company-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 12px;
+}
+.company-bar-bg {
+  width: 120px;
+  height: 8px;
+  background: rgba(0,255,213,0.1);
+  border-radius: 0;
+  margin-right: 10px;
+  overflow: hidden;
+}
+.company-bar {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(0,255,213,0.7), rgba(0,255,213,0.1));
+  border-radius: 0;
+  transition: width 0.6s ease;
+}
+.company-count {
+  font-weight: 700;
+  color: var(--cyan);
+  min-width: 30px;
+  text-align: right;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.utm-chart-wrapper {
+  position: relative;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.footer {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  margin-top: 32px;
+  font-family: 'Share Tech Mono', monospace;
+}
+.footer::before {
+  content: '━━━━━━━━━━━━';
+  display: block;
+  margin-bottom: 16px;
+  color: rgba(0,255,213,0.2);
+  letter-spacing: 4px;
+}
+
+/* Drop Zone */
+.dropzone-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 48px);
+}
+.dropzone {
+  width: 100%;
+  max-width: 600px;
+  padding: 60px 40px;
+  border: 2px dashed rgba(0,255,213,0.3);
+  border-radius: 0;
+  text-align: center;
+  background: var(--bg-secondary);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  clip-path: polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px);
+}
+.dropzone:hover, .dropzone.dragover {
+  border-color: var(--cyan);
+  border-style: solid;
+  background: rgba(0,255,213,0.05);
+  transform: scale(1.02);
+  box-shadow: 0 0 40px rgba(0,255,213,0.15), inset 0 0 40px rgba(0,255,213,0.05);
+}
+.dropzone-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  display: block;
+  filter: drop-shadow(0 0 20px rgba(0,255,213,0.5));
+}
+.dropzone-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--cyan);
+  margin-bottom: 8px;
+  font-family: 'Share Tech Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.dropzone-sub {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  font-family: 'Share Tech Mono', monospace;
+}
+.dropzone-btn {
+  display: inline-block;
+  background: transparent;
+  color: var(--cyan);
+  padding: 10px 28px;
+  border: 1px solid var(--cyan);
+  border-radius: 0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Share Tech Mono', monospace;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.dropzone-btn:hover { background: rgba(0,255,213,0.1); box-shadow: 0 0 20px rgba(0,255,213,0.2); }
+.dropzone-filename {
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--cyan);
+  display: none;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.hidden { display: none !important; }
+
+.lang-hint {
+  position: fixed;
+  bottom: 12px;
+  right: 16px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  opacity: 0.5;
+  z-index: 999;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* Boot overlay */
+.boot-overlay {
+  position: fixed;
+  inset: 0;
+  background: #050a0e;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+.boot-text {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 18px;
+  color: var(--cyan);
+  letter-spacing: 6px;
+  text-shadow: 0 0 20px rgba(0,255,213,0.5);
+}
+.boot-dots {
+  animation: blink 0.8s step-start infinite;
+}
+.boot-progress {
+  width: 300px;
+  height: 2px;
+  background: rgba(0,255,213,0.1);
+  overflow: hidden;
+}
+.boot-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  animation: bootLoad 800ms ease-out forwards;
+}
+@keyframes bootLoad {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.boot-in {
+  animation: fadeSlideUp 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+/* ===== LANGUAGE SWITCH OVERLAY ===== */
+#lang-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: none;
+  pointer-events: none;
+  background: rgba(0, 0, 0, 0);
+}
+
+#lang-overlay.active {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: langFlash 2.4s ease-out forwards;
+}
+
+@keyframes langFlash {
+  0% { background: rgba(0, 0, 0, 0); }
+  6% { background: rgba(0, 255, 213, 0.15); }
+  15% { background: rgba(0, 255, 213, 0.05); }
+  35% { background: rgba(0, 0, 0, 0.55); }
+  100% { background: rgba(0, 0, 0, 0); }
+}
+
+.lang-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  opacity: 0;
+}
+
+#lang-overlay.active .lang-content {
+  animation: langReveal 2.2s ease-out 0.1s forwards;
+}
+
+@keyframes langReveal {
+  0% { opacity: 0; transform: scale(2) rotate(-5deg); }
+  20% { opacity: 1; transform: scale(1) rotate(0deg); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: scale(0.9); }
+}
+
+.lang-icon { font-size: 72px; filter: drop-shadow(0 0 30px rgba(0,255,213,0.6)); }
+
+.lang-mascots {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.lang-mascot {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  opacity: 0;
+  filter: drop-shadow(0 0 30px rgba(0,255,213,0.7));
+  pointer-events: none;
+}
+
+#lang-overlay.active .lang-mascot:nth-child(1) {
+  animation: mascotBounce 2.2s ease-out 0.05s forwards;
+}
+#lang-overlay.active .lang-mascot:nth-child(2) {
+  animation: mascotBounce 2.2s ease-out 0.2s forwards;
+  width: 140px; height: 140px;
+}
+#lang-overlay.active .lang-mascot:nth-child(3) {
+  animation: mascotBounce 2.2s ease-out 0.35s forwards;
+}
+
+@keyframes mascotBounce {
+  0% { opacity: 0; transform: scale(0) rotate(-20deg) translateY(40px); }
+  18% { opacity: 1; transform: scale(1.25) rotate(5deg) translateY(-10px); }
+  30% { transform: scale(0.9) rotate(-3deg) translateY(5px); }
+  42% { transform: scale(1.08) rotate(2deg) translateY(-3px); }
+  55% { transform: scale(1) rotate(0deg) translateY(0); opacity: 1; }
+  80% { opacity: 1; transform: scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: scale(0.5) rotate(10deg) translateY(20px); }
+}
+
+.lang-label {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 10px;
+  text-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.lang-label.en-mode { color: var(--cyan); }
+.lang-label.jp-mode { color: var(--amber); }
+
+.lang-particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+@keyframes langParticle {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0) translateY(-80px); }
+}
+
+body.lang-switching .chart-container,
+body.lang-switching .kpi-card {
+  transition: transform 0.3s;
+  transform: scale(0.98);
+}
+</style>
+</head>
+<body>
+
+<!-- Language hint easter egg -->
+<div class="lang-hint">type <kbd>en</kbd> for English / <kbd>jp</kbd> for Japanese</div>
+
+<!-- Language Switch Overlay -->
+<div id="lang-overlay">
+  <div class="lang-content">
+    <div class="lang-icon" id="lang-icon">🌐</div>
+    <div class="lang-mascots">
+      <img class="lang-mascot" src="mascot_duck.gif" alt="Rubber Ducky" />
+      <img class="lang-mascot" src="mascot_mona.gif" alt="Mona" />
+      <img class="lang-mascot" src="mascot_copilot.gif" alt="Copilot" />
+    </div>
+    <div id="lang-label" class="lang-label"></div>
+  </div>
+</div>
+
+<!-- Drop Zone -->
+<div id="dropzone-overlay" class="dropzone-overlay">
+  <div id="dropzone" class="dropzone">
+    <span class="dropzone-icon">📊</span>
+    <div class="dropzone-title" data-i18n="dz_title">CSVファイルをドラッグ&ドロップ</div>
+    <div class="dropzone-sub" data-i18n="dz_sub">または下のボタンでファイルを選択</div>
+    <button class="dropzone-btn" id="selectFileBtn" data-i18n="dz_btn">ファイルを選択</button>
+    <div class="dropzone-filename" id="dropzone-filename"></div>
+    <div style="margin-top:16px;font-size:10px;color:#4a7a6a;font-family:'Share Tech Mono',monospace;letter-spacing:1px;">🔒 データはブラウザ内のみに保存されサーバーには送信されません</div>
+    <input type="file" id="fileInput" accept=".csv" style="display:none">
+  </div>
+</div>
+
+<!-- Boot Overlay -->
+<div id="boot-overlay" class="boot-overlay hidden">
+  <div class="boot-text">SYSTEM INITIALIZING<span class="boot-dots">...</span></div>
+  <div class="boot-progress"><div class="boot-bar"></div></div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" class="dashboard hidden">
+  <div class="header">
+    <button class="change-csv-btn" id="changeCsvBtn">📂 <span data-i18n="change_csv">CSVを変更</span></button>
+    <button class="demo-btn" id="demoBtn">🎭 <span data-i18n="demo_off">DEMO OFF</span></button>
+    <div class="demo-badge hidden" id="demoBadge">⚠ DEMO MODE</div>
+    <div class="event-date-group">
+      <span class="event-date-label" data-i18n="event_date_label">EVENT DATE</span>
+      <input type="date" class="event-date-input" id="eventDateInput" value="2026-04-17">
+    </div>
+    <h1 data-i18n="title">GitHub Workshop 登録者予測ダッシュボード</h1>
+    <div class="subtitle" data-i18n="subtitle">イベント日: 2026年4月17日 ｜ 線形回帰モデルによる参加者数予測</div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="label" data-i18n="kpi_total_label">現在の登録者数</div>
+      <div class="value" id="kpi-total">-</div>
+      <div class="sub" data-i18n="kpi_total_sub">Total Registrants</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="label" data-i18n="kpi_forecast_label">予測登録数 (4/17)</div>
+      <div class="value" id="kpi-forecast">-</div>
+      <div class="sub" data-i18n="kpi_forecast_sub">Forecast at Event Date</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="label" data-i18n="kpi_slope_label">日平均増加数</div>
+      <div class="value" id="kpi-slope">-</div>
+      <div class="sub" data-i18n="kpi_slope_sub">Daily Growth Rate</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="label" data-i18n="kpi_days_label">残り日数</div>
+      <div class="value" id="kpi-days">-</div>
+      <div class="sub" data-i18n="kpi_days_sub">Days to Event</div>
+    </div>
+    <div class="kpi-card pink">
+      <div class="label" data-i18n="kpi_companies_label">参加企業数</div>
+      <div class="value" id="kpi-companies">-</div>
+      <div class="sub" data-i18n="kpi_companies_sub">Unique Companies</div>
+    </div>
+  </div>
+
+  <!-- Main Forecast Chart -->
+  <div class="chart-container">
+    <h2 data-i18n="chart_forecast_title">📈 累積登録者数 & 予測</h2>
+    <div class="chart-wrapper"><canvas id="forecastChart"></canvas></div>
+  </div>
+
+  <!-- Forecast Note -->
+  <div class="forecast-note" id="forecast-note"></div>
+
+  <!-- Scenario Table -->
+  <div class="chart-container">
+    <h2 data-i18n="chart_scenario_title">🎯 シナリオ別予測</h2>
+    <table class="scenario-table">
+      <thead>
+        <tr>
+          <th data-i18n="sc_scenario">シナリオ</th>
+          <th data-i18n="sc_slope">日次増加率</th>
+          <th data-i18n="sc_forecast">予測登録数 (4/17)</th>
+          <th data-i18n="sc_growth">現在からの増加</th>
+        </tr>
+      </thead>
+      <tbody id="scenario-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Daily Chart -->
+  <div class="chart-container">
+    <h2 data-i18n="chart_daily_title">📊 日別新規登録者数</h2>
+    <div class="chart-wrapper"><canvas id="dailyChart"></canvas></div>
+  </div>
+
+  <!-- Company + UTM -->
+  <div class="grid-2">
+    <div class="chart-container">
+      <h2 data-i18n="chart_company_title">🏢 企業別登録者数 Top 15</h2>
+      <ul class="company-list" id="company-list"></ul>
+    </div>
+    <div class="chart-container">
+      <h2 data-i18n="chart_utm_title">📡 UTMソース別内訳</h2>
+      <div class="utm-chart-wrapper"><canvas id="utmChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer" id="footer"></div>
+</div>
+
+<script>
+// ==== Chart.js defaults ====
+Chart.defaults.color = '#4a7a6a';
+Chart.defaults.borderColor = 'rgba(0,255,213,0.08)';
+Chart.defaults.font.family = "'Share Tech Mono', monospace";
+
+// ==== Demo mode ====
+let demoMode = false;
+let bootPlayed = false;
+
+function anonymize(name, index) {
+  if (index < 26) return String.fromCharCode(65 + index) + '社';
+  const first = String.fromCharCode(65 + Math.floor(index / 26) - 1);
+  const second = String.fromCharCode(65 + (index % 26));
+  return first + second + '社';
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function animateValue(el, start, end, duration, decimals, prefix) {
+  decimals = decimals || 0;
+  prefix = prefix || '';
+  const startTime = performance.now();
+  const easeOutQuart = t => 1 - Math.pow(1 - t, 4);
+  function update(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easedProgress = easeOutQuart(progress);
+    const current = start + (end - start) * easedProgress;
+    el.textContent = prefix + current.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    if (progress < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+
+// ==== i18n ====
+const I18N = {
+  ja: {
+    title: 'GitHub Workshop 登録者予測ダッシュボード',
+    subtitle: 'イベント日: {eventDate} ｜ 線形回帰モデルによる参加者数予測',
+    change_csv: 'CSVを変更',
+    demo_on: 'DEMO ON',
+    demo_off: 'DEMO OFF',
+    event_date_label: 'EVENT DATE',
+    dz_title: 'CSVファイルをドラッグ&ドロップ',
+    dz_sub: 'または下のボタンでファイルを選択',
+    dz_btn: 'ファイルを選択',
+    kpi_total_label: '現在の登録者数',
+    kpi_total_sub: 'Total Registrants',
+    kpi_forecast_label: '予測登録数 ({eventShort})',
+    kpi_forecast_sub: 'Forecast at Event Date',
+    kpi_slope_label: '日平均増加数',
+    kpi_slope_sub: 'Daily Growth Rate',
+    kpi_days_label: '残り日数',
+    kpi_days_sub: 'Days to Event',
+    kpi_companies_label: '参加企業数',
+    kpi_companies_sub: 'Unique Companies',
+    chart_forecast_title: '📈 累積登録者数 & 予測',
+    chart_daily_title: '📊 日別新規登録者数',
+    chart_company_title: '🏢 企業別登録者数 Top 15',
+    chart_utm_title: '📡 UTMソース別内訳',
+    chart_scenario_title: '🎯 シナリオ別予測',
+    sc_scenario: 'シナリオ',
+    sc_slope: '日次増加率',
+    sc_forecast: '予測登録数 ({eventShort})',
+    sc_growth: '現在からの増加',
+    sc_optimistic: '🚀 楽観 (+30%)',
+    sc_baseline: '📊 ベースライン',
+    sc_pessimistic: '🐢 悲観 (-30%)',
+    forecast_note: '📌 予測モデル: 直近21日間の登録トレンドに基づく線形回帰モデル（日平均 +{slope}名/日）。楽観シナリオは+30%、悲観シナリオは-30%で算出。',
+    lbl_actual: '実績（累積）',
+    lbl_baseline: 'ベースライン予測',
+    lbl_optimistic: '楽観予測 (+30%)',
+    lbl_pessimistic: '悲観予測 (-30%)',
+    lbl_daily: '新規登録者数',
+    persons: '名',
+    direct_none: '(direct / none)',
+  },
+  en: {
+    title: 'GitHub Workshop Registration Forecast Dashboard',
+    subtitle: 'Event Date: {eventDate} ｜ Linear Regression Forecast',
+    change_csv: 'Change CSV',
+    demo_on: 'DEMO ON',
+    demo_off: 'DEMO OFF',
+    event_date_label: 'EVENT DATE',
+    dz_title: 'Drag & Drop CSV File',
+    dz_sub: 'or click the button below to select a file',
+    dz_btn: 'Select File',
+    kpi_total_label: 'Current Registrants',
+    kpi_total_sub: 'Total Registrants',
+    kpi_forecast_label: 'Forecast ({eventShort})',
+    kpi_forecast_sub: 'Forecast at Event Date',
+    kpi_slope_label: 'Daily Growth',
+    kpi_slope_sub: 'Daily Growth Rate',
+    kpi_days_label: 'Days Left',
+    kpi_days_sub: 'Days to Event',
+    kpi_companies_label: 'Companies',
+    kpi_companies_sub: 'Unique Companies',
+    chart_forecast_title: '📈 Cumulative Registrations & Forecast',
+    chart_daily_title: '📊 Daily New Registrations',
+    chart_company_title: '🏢 Top 15 Companies',
+    chart_utm_title: '📡 UTM Source Breakdown',
+    chart_scenario_title: '🎯 Scenario Forecasts',
+    sc_scenario: 'Scenario',
+    sc_slope: 'Daily Rate',
+    sc_forecast: 'Forecast ({eventShort})',
+    sc_growth: 'Growth from Now',
+    sc_optimistic: '🚀 Optimistic (+30%)',
+    sc_baseline: '📊 Baseline',
+    sc_pessimistic: '🐢 Pessimistic (-30%)',
+    forecast_note: '📌 Forecast Model: Linear regression based on the last 21 days of registration trend (daily avg +{slope}/day). Optimistic scenario is +30%, pessimistic is -30%.',
+    lbl_actual: 'Actual (Cumulative)',
+    lbl_baseline: 'Baseline Forecast',
+    lbl_optimistic: 'Optimistic (+30%)',
+    lbl_pessimistic: 'Pessimistic (-30%)',
+    lbl_daily: 'New Registrations',
+    persons: '',
+    direct_none: '(direct / none)',
+  }
+};
+let currentLang = 'ja';
+
+function t(key) {
+  let val = (I18N[currentLang] && I18N[currentLang][key]) || key;
+  const parts = EVENT_DATE.split('-');
+  const eventShort = parts[1].replace(/^0/, '') + '/' + parts[2].replace(/^0/, '');
+  const eventDateJa = parts[0] + '年' + parseInt(parts[1]) + '月' + parseInt(parts[2]) + '日';
+  const eventDateEn = new Date(EVENT_DATE + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const eventDate = currentLang === 'ja' ? eventDateJa : eventDateEn;
+  return val.replace(/\{eventDate\}/g, eventDate).replace(/\{eventShort\}/g, eventShort);
+}
+
+function applyLangText() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (I18N[currentLang][key]) el.textContent = t(key);
+  });
+}
+
+function applyLang() {
+  applyLangText();
+  if (window._dashData) renderDashboard(window._dashData.rows, window._dashData.filename);
+}
+
+// Language switch easter egg
+let keyBuffer = '';
+let langCooldown = false;
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (langCooldown) return;
+  keyBuffer += e.key.toLowerCase();
+  if (keyBuffer.length > 6) keyBuffer = keyBuffer.slice(-6);
+  if (keyBuffer.endsWith('en') && currentLang !== 'en') {
+    keyBuffer = '';
+    triggerLangSwitch('en');
+  } else if (keyBuffer.endsWith('jp') && currentLang !== 'ja') {
+    keyBuffer = '';
+    triggerLangSwitch('ja');
+  }
+});
+
+function triggerLangSwitch(lang) {
+  if (langCooldown) return;
+  langCooldown = true;
+
+  const overlay = document.getElementById('lang-overlay');
+  const icon = document.getElementById('lang-icon');
+  const label = document.getElementById('lang-label');
+
+  icon.textContent = lang === 'en' ? '🇺🇸' : '🇯🇵';
+
+  if (lang === 'en') {
+    label.textContent = 'ENGLISH MODE';
+    label.className = 'lang-label en-mode';
+  } else {
+    label.textContent = '日本語モード';
+    label.className = 'lang-label jp-mode';
+  }
+
+  // Particles
+  overlay.querySelectorAll('.lang-particle').forEach(p => p.remove());
+  for (let i = 0; i < 24; i++) {
+    const p = document.createElement('div');
+    p.className = 'lang-particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.top = Math.random() * 100 + '%';
+    const sz = (2 + Math.random() * 5) + 'px';
+    p.style.width = sz;
+    p.style.height = sz;
+    p.style.background = lang === 'en' ? '#00ffd5' : '#ffa500';
+    p.style.animation = 'langParticle ' + (0.8 + Math.random() * 1.2) + 's ease-out ' + (Math.random() * 0.3) + 's forwards';
+    overlay.appendChild(p);
+  }
+
+  overlay.classList.add('active');
+  document.body.classList.add('lang-switching');
+
+  setTimeout(() => { currentLang = lang; applyLang(); }, 500);
+
+  setTimeout(() => {
+    overlay.classList.remove('active');
+    overlay.querySelectorAll('.lang-particle').forEach(p => p.remove());
+    setTimeout(() => {
+      document.body.classList.remove('lang-switching');
+      langCooldown = false;
+    }, 600);
+  }, 2400);
+}
+
+// ==== CSV Parser ====
+function parseCSV(text) {
+  // Remove BOM
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const lines = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (i + 1 < text.length && text[i + 1] === '"') {
+          current += '"'; i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += ch;
+      }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === '\n') { lines.push(current); current = ''; }
+      else if (ch === '\r') { /* skip */ }
+      else { current += ch; }
+    }
+  }
+  if (current.trim()) lines.push(current);
+
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim());
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const vals = splitCSVLine(lines[i]);
+    if (vals.length < headers.length) continue;
+    const obj = {};
+    headers.forEach((h, idx) => obj[h] = (vals[idx] || '').trim());
+    if (!obj.registered_at) continue;
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function splitCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (i + 1 < line.length && line[i + 1] === '"') { current += '"'; i++; }
+        else inQuotes = false;
+      } else current += ch;
+    } else {
+      if (ch === '"') inQuotes = true;
+      else if (ch === ',') { result.push(current); current = ''; }
+      else current += ch;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+// ==== Date helpers (JST = UTC+9) ====
+function toJSTDateStr(isoStr) {
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return null;
+  const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  return jst.toISOString().slice(0, 10);
+}
+
+function daysBetween(dateStr1, dateStr2) {
+  const d1 = new Date(dateStr1 + 'T00:00:00Z');
+  const d2 = new Date(dateStr2 + 'T00:00:00Z');
+  return Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
+}
+
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+function dateRange(start, end) {
+  const dates = [];
+  let cur = start;
+  while (cur <= end) { dates.push(cur); cur = addDays(cur, 1); }
+  return dates;
+}
+
+// ==== Computation ====
+let EVENT_DATE = '2026-04-17';
+
+function computeAll(rows) {
+  // Daily counts
+  const dailyCounts = {};
+  const companies = {};
+  const utmCounts = {};
+
+  rows.forEach(r => {
+    const d = toJSTDateStr(r.registered_at);
+    if (!d) return;
+    dailyCounts[d] = (dailyCounts[d] || 0) + 1;
+    const comp = r.company || '';
+    if (comp) companies[comp] = (companies[comp] || 0) + 1;
+    const utm = r.utm_source ? r.utm_source : t('direct_none');
+    utmCounts[utm] = (utmCounts[utm] || 0) + 1;
+  });
+
+  const sortedDates = Object.keys(dailyCounts).sort();
+  const firstDate = sortedDates[0];
+  const lastDate = sortedDates[sortedDates.length - 1];
+  const allDates = dateRange(firstDate, lastDate);
+
+  // Fill missing dates with 0
+  allDates.forEach(d => { if (!dailyCounts[d]) dailyCounts[d] = 0; });
+
+  // Cumulative
+  const dailyArr = allDates.map(d => ({ date: d, count: dailyCounts[d] || 0 }));
+  let cumTotal = 0;
+  const cumulArr = dailyArr.map(item => { cumTotal += item.count; return { date: item.date, cumul: cumTotal }; });
+
+  const totalRegistrants = rows.length;
+  const uniqueCompanies = new Set(rows.map(r => r.company).filter(Boolean)).size;
+  const daysRemaining = daysBetween(lastDate, EVENT_DATE);
+
+  // Linear regression on last 21 days of cumulative data
+  const last21 = cumulArr.slice(-21);
+  const n = last21.length;
+  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+  last21.forEach((item, i) => {
+    sumX += i; sumY += item.cumul; sumXY += i * item.cumul; sumXX += i * i;
+  });
+  const slope = n > 1 ? (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX) : 0;
+  const intercept = (sumY - slope * sumX) / n;
+
+  // Forecast from lastDate to EVENT_DATE
+  const forecastDates = dateRange(addDays(lastDate, 1), EVENT_DATE);
+  const lastCumul = cumulArr[cumulArr.length - 1].cumul;
+  const baselineEndIdx = n - 1;
+
+  const forecastBaseline = [];
+  const forecastOptimistic = [];
+  const forecastPessimistic = [];
+
+  forecastDates.forEach((d, i) => {
+    const daysAhead = i + 1;
+    const base = lastCumul + slope * daysAhead;
+    const opt = lastCumul + slope * 1.3 * daysAhead;
+    const pess = lastCumul + slope * 0.7 * daysAhead;
+    forecastBaseline.push({ date: d, value: Math.round(base) });
+    forecastOptimistic.push({ date: d, value: Math.round(opt) });
+    forecastPessimistic.push({ date: d, value: Math.round(pess) });
+  });
+
+  const forecastAtEvent = forecastBaseline.length > 0 ? forecastBaseline[forecastBaseline.length - 1].value : totalRegistrants;
+  const forecastOptEvent = forecastOptimistic.length > 0 ? forecastOptimistic[forecastOptimistic.length - 1].value : totalRegistrants;
+  const forecastPessEvent = forecastPessimistic.length > 0 ? forecastPessimistic[forecastPessimistic.length - 1].value : totalRegistrants;
+
+  // Top 15 companies
+  const topCompanies = Object.entries(companies).sort((a, b) => b[1] - a[1]).slice(0, 15);
+
+  return {
+    dailyArr, cumulArr, totalRegistrants, uniqueCompanies, daysRemaining,
+    slope, forecastBaseline, forecastOptimistic, forecastPessimistic,
+    forecastAtEvent, forecastOptEvent, forecastPessEvent,
+    topCompanies, utmCounts, lastDate
+  };
+}
+
+// ==== Chart instances ====
+let forecastChartInstance = null;
+let dailyChartInstance = null;
+let utmChartInstance = null;
+
+// ==== Render Dashboard ====
+function renderDashboard(rows, filename) {
+  window._dashData = { rows, filename };
+  const data = computeAll(rows);
+
+  // KPIs
+  document.getElementById('kpi-total').textContent = data.totalRegistrants.toLocaleString();
+  document.getElementById('kpi-forecast').textContent = data.forecastAtEvent.toLocaleString();
+  document.getElementById('kpi-slope').textContent = '+' + data.slope.toFixed(1);
+  document.getElementById('kpi-days').textContent = data.daysRemaining;
+  document.getElementById('kpi-companies').textContent = data.uniqueCompanies.toLocaleString();
+
+  // Forecast note
+  document.getElementById('forecast-note').textContent = t('forecast_note').replace('{slope}', data.slope.toFixed(1));
+
+  // Scenario table
+  const tbody = document.getElementById('scenario-tbody');
+  const scenarios = [
+    { cls: 'optimistic', label: t('sc_optimistic'), rate: data.slope * 1.3, forecast: data.forecastOptEvent, growth: data.forecastOptEvent - data.totalRegistrants },
+    { cls: 'baseline', label: t('sc_baseline'), rate: data.slope, forecast: data.forecastAtEvent, growth: data.forecastAtEvent - data.totalRegistrants },
+    { cls: 'pessimistic', label: t('sc_pessimistic'), rate: data.slope * 0.7, forecast: data.forecastPessEvent, growth: data.forecastPessEvent - data.totalRegistrants },
+  ];
+  tbody.innerHTML = scenarios.map(s =>
+    `<tr class="${s.cls}"><td>${s.label}</td><td>+${s.rate.toFixed(1)}${t('persons')}/day</td><td>${s.forecast.toLocaleString()}${t('persons')}</td><td>+${s.growth.toLocaleString()}${t('persons')}</td></tr>`
+  ).join('');
+
+  // --- Forecast Chart ---
+  const allLabels = data.cumulArr.map(c => c.date);
+  const fcLabels = data.forecastBaseline.map(f => f.date);
+  const combinedLabels = [...allLabels, ...fcLabels];
+
+  const actualData = data.cumulArr.map(c => c.cumul);
+  const baselineData = new Array(allLabels.length).fill(null);
+  baselineData[baselineData.length - 1] = data.cumulArr[data.cumulArr.length - 1].cumul;
+  const optData = [...baselineData];
+  const pessData = [...baselineData];
+  data.forecastBaseline.forEach(f => baselineData.push(f.value));
+  data.forecastOptimistic.forEach(f => optData.push(f.value));
+  data.forecastPessimistic.forEach(f => pessData.push(f.value));
+  while (actualData.length < combinedLabels.length) actualData.push(null);
+
+  if (forecastChartInstance) forecastChartInstance.destroy();
+  forecastChartInstance = new Chart(document.getElementById('forecastChart'), {
+    type: 'line',
+    data: {
+      labels: combinedLabels,
+      datasets: [
+        { label: t('lbl_actual'), data: actualData, borderColor: '#00ffd5', backgroundColor: 'rgba(0,255,213,0.08)', fill: true, tension: 0.3, pointRadius: 2, borderWidth: 2 },
+        { label: t('lbl_baseline'), data: baselineData, borderColor: '#ffa500', borderDash: [6, 3], tension: 0.3, pointRadius: 0, borderWidth: 2, fill: false },
+        { label: t('lbl_optimistic'), data: optData, borderColor: 'rgba(0,255,213,0.5)', borderDash: [4, 4], tension: 0.3, pointRadius: 0, borderWidth: 1.5, fill: false },
+        { label: t('lbl_pessimistic'), data: pessData, borderColor: '#ff3366', borderDash: [4, 4], tension: 0.3, pointRadius: 0, borderWidth: 1.5, fill: false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: '#4a7a6a', font: { size: 12 } } },
+        tooltip: { mode: 'index', intersect: false }
+      },
+      scales: {
+        x: { ticks: { color: '#4a7a6a', maxRotation: 45, maxTicksLimit: 20, font: { size: 10 } }, grid: { color: 'rgba(0,255,213,0.08)' } },
+        y: { ticks: { color: '#4a7a6a' }, grid: { color: 'rgba(0,255,213,0.08)' } }
+      }
+    }
+  });
+
+  // --- Daily Chart ---
+  if (dailyChartInstance) dailyChartInstance.destroy();
+  dailyChartInstance = new Chart(document.getElementById('dailyChart'), {
+    type: 'bar',
+    data: {
+      labels: data.dailyArr.map(d => d.date),
+      datasets: [{
+        label: t('lbl_daily'),
+        data: data.dailyArr.map(d => d.count),
+        backgroundColor: 'rgba(0,255,213,0.5)',
+        borderColor: '#00ffd5',
+        borderWidth: 1,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#4a7a6a' } } },
+      scales: {
+        x: { ticks: { color: '#4a7a6a', maxRotation: 45, maxTicksLimit: 20, font: { size: 10 } }, grid: { color: 'rgba(0,255,213,0.06)' } },
+        y: { ticks: { color: '#4a7a6a', stepSize: 1 }, grid: { color: 'rgba(0,255,213,0.06)' }, beginAtZero: true }
+      }
+    }
+  });
+
+  // --- Company list ---
+  const compList = document.getElementById('company-list');
+  const maxCount = data.topCompanies.length > 0 ? data.topCompanies[0][1] : 1;
+  compList.innerHTML = data.topCompanies.map(([name, count], i) => {
+    const displayName = demoMode ? anonymize(name, i) : escapeHtml(name);
+    return `<li class="company-item">
+      <span class="company-rank">${i + 1}</span>
+      <span class="company-name" title="${displayName}">${displayName}</span>
+      <div class="company-bar-bg"><div class="company-bar" style="width:${(count / maxCount * 100).toFixed(1)}%"></div></div>
+      <span class="company-count">${count}</span>
+    </li>`;
+  }).join('');
+
+  // --- UTM Chart ---
+  const utmEntries = Object.entries(data.utmCounts);
+  const utmLabels = utmEntries.map((e, i) => demoMode ? 'Source ' + String.fromCharCode(65 + i) : escapeHtml(e[0]));
+  const utmValues = utmEntries.map(e => e[1]);
+  const utmColors = ['#00ffd5', '#ffa500', '#ff3366', '#00aaff', '#ff69b4', '#7b68ee'];
+  if (utmChartInstance) utmChartInstance.destroy();
+  utmChartInstance = new Chart(document.getElementById('utmChart'), {
+    type: 'doughnut',
+    data: {
+      labels: utmLabels,
+      datasets: [{ data: utmValues, backgroundColor: utmColors.slice(0, utmLabels.length), borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { color: '#c0e8d8', padding: 12, font: { size: 12 } } }
+      }
+    }
+  });
+
+  // Footer
+  const now = new Date();
+  const footerText = `Generated by GitHub Copilot CLI ┃ Data source: ${filename} ┃ Last updated: ${now.toLocaleString('ja-JP')}`;
+  document.getElementById('footer').textContent = footerText;
+}
+
+// ==== File loading logic ====
+function loadCSVContent(text, filename) {
+  const rows = parseCSV(text);
+  if (rows.length === 0) { alert('有効なデータが見つかりませんでした。CSVファイルを確認してください。'); return; }
+  // Save to localStorage
+  try {
+    localStorage.setItem('forecast_csv_data', text);
+    localStorage.setItem('forecast_csv_filename', filename);
+  } catch (e) { /* storage full, ignore */ }
+  showDashboard(rows, filename);
+}
+
+function showDashboard(rows, filename) {
+  document.getElementById('dropzone-overlay').classList.add('hidden');
+  document.getElementById('dashboard').classList.remove('hidden');
+
+  if (!bootPlayed) {
+    bootPlayed = true;
+    const bootOverlay = document.getElementById('boot-overlay');
+    bootOverlay.classList.remove('hidden');
+
+    setTimeout(() => {
+      bootOverlay.classList.add('hidden');
+
+      // Stagger fade-in for sections
+      const sections = document.querySelectorAll('#dashboard > .header, #dashboard > .kpi-grid, #dashboard > .chart-container, #dashboard > .forecast-note, #dashboard > .grid-2, #dashboard > .footer');
+      sections.forEach((el, idx) => {
+        el.style.opacity = '0';
+        setTimeout(() => {
+          el.classList.add('boot-in');
+          el.style.opacity = '';
+        }, idx * 150);
+      });
+
+      // Render then animate KPI values
+      renderDashboard(rows, filename);
+      const data = computeAll(rows);
+      const kpiTargets = [
+        { id: 'kpi-total', value: data.totalRegistrants, decimals: 0, prefix: '' },
+        { id: 'kpi-forecast', value: data.forecastAtEvent, decimals: 0, prefix: '' },
+        { id: 'kpi-slope', value: data.slope, decimals: 1, prefix: '+' },
+        { id: 'kpi-days', value: data.daysRemaining, decimals: 0, prefix: '' },
+        { id: 'kpi-companies', value: data.uniqueCompanies, decimals: 0, prefix: '' },
+      ];
+      kpiTargets.forEach((kpi, idx) => {
+        setTimeout(() => {
+          animateValue(document.getElementById(kpi.id), 0, kpi.value, 1200, kpi.decimals, kpi.prefix);
+        }, 200 + idx * 200);
+      });
+    }, 800);
+  } else {
+    renderDashboard(rows, filename);
+  }
+}
+
+function showDropzone() {
+  document.getElementById('dropzone-overlay').classList.remove('hidden');
+  document.getElementById('dashboard').classList.add('hidden');
+}
+
+// ==== Demo toggle ====
+document.getElementById('demoBtn').addEventListener('click', () => {
+  demoMode = !demoMode;
+  const btn = document.getElementById('demoBtn');
+  const badge = document.getElementById('demoBadge');
+  const span = btn.querySelector('[data-i18n]');
+  if (demoMode) {
+    btn.classList.add('active');
+    badge.classList.remove('hidden');
+    span.setAttribute('data-i18n', 'demo_on');
+    span.textContent = t('demo_on');
+  } else {
+    btn.classList.remove('active');
+    badge.classList.add('hidden');
+    span.setAttribute('data-i18n', 'demo_off');
+    span.textContent = t('demo_off');
+  }
+  if (window._dashData) renderDashboard(window._dashData.rows, window._dashData.filename);
+});
+
+// ==== Drop zone events ====
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const selectFileBtn = document.getElementById('selectFileBtn');
+const dzFilename = document.getElementById('dropzone-filename');
+
+selectFileBtn.addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+dropzone.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  readFile(file);
+});
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) readFile(file);
+});
+
+function readFile(file) {
+  dzFilename.style.display = 'block';
+  dzFilename.textContent = '📄 ' + file.name + ' を読み込み中...';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    dzFilename.textContent = '✅ ' + file.name;
+    setTimeout(() => loadCSVContent(ev.target.result, file.name), 300);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// Change CSV button
+document.getElementById('changeCsvBtn').addEventListener('click', () => {
+  localStorage.removeItem('forecast_csv_data');
+  localStorage.removeItem('forecast_csv_filename');
+  localStorage.removeItem('forecast_event_date');
+  fileInput.value = '';
+  dzFilename.style.display = 'none';
+  showDropzone();
+});
+
+// Event date change
+document.getElementById('eventDateInput').addEventListener('change', e => {
+  EVENT_DATE = e.target.value;
+  localStorage.setItem('forecast_event_date', EVENT_DATE);
+  if (window._dashData) renderDashboard(window._dashData.rows, window._dashData.filename);
+});
+
+// ==== On page load: check localStorage ====
+(function init() {
+  const savedDate = localStorage.getItem('forecast_event_date');
+  if (savedDate) {
+    EVENT_DATE = savedDate;
+    document.getElementById('eventDateInput').value = savedDate;
+  }
+  const savedCSV = localStorage.getItem('forecast_csv_data');
+  const savedFilename = localStorage.getItem('forecast_csv_filename');
+  if (savedCSV && savedFilename) {
+    const rows = parseCSV(savedCSV);
+    if (rows.length > 0) {
+      showDashboard(rows, savedFilename);
+      return;
+    }
+  }
+  showDropzone();
+})();
+</script>
+</body>
+</html>
