@@ -15,6 +15,8 @@ An interactive HTML dashboard that visualizes and forecasts GitHub Workshop even
 Just drag & drop a CSV file — **data stays in your browser only (never sent to any server)**.  
 From data analysis logic to UI implementation, everything was built through conversations with **GitHub Copilot CLI**.
 
+> 💡 **Future Extensibility**: The current CSV-based approach is designed so anyone on the team can use it immediately. By connecting directly to a registration platform API, the CSV export step becomes unnecessary — the dashboard would always show the latest data automatically.
+
 ### Deliverables
 
 | File | Description |
@@ -106,8 +108,8 @@ open index.html    # macOS
 | 📂 **Change CSV** | Switch to a different CSV file (clears localStorage) |
 | 🎭 **DEMO** | Anonymize company names → "A社, B社..." and UTM → "Source A, B..." |
 | 📅 **EVENT DATE** | Change the target event date (forecast auto-recalculates) |
-| ⌨️ Type `en` | Switch to English mode (Rubber Ducky 🦆 Mona 🐙 Copilot ✨ appear) |
-| ⌨️ Type `jp` | Switch to Japanese mode |
+| ⌨️ Type `en` | Switch to English (Rubber Ducky 🦆 Mona 🐙 Copilot ✨ appear) |
+| ⌨️ Type `jp` | Switch to Japanese |
 
 ---
 
@@ -157,3 +159,123 @@ last_name,company,title,domain,registered_at,utm_source,utm_medium,utm_campaign,
 2. **Security Review**: The code review agent caught vulnerabilities and fixed them (XSS, SRI, PII)
 3. **UI Expressiveness**: Abstract UI instructions can be translated into full CSS animations
 4. **Single-File HTML**: Only Chart.js CDN used. Serverless, shareable with anyone
+
+---
+
+## 🚀 GitHub Copilot CLI Beginner's Guide
+
+A guide for anyone who wants to build projects like this dashboard.
+
+### Installation
+
+```bash
+# macOS / Linux
+brew install copilot-cli
+
+# Windows
+winget install GitHub.Copilot
+```
+
+> Prerequisite: An active [GitHub Copilot subscription](https://github.com/features/copilot/plans) is required.
+
+### Set Up Your Workspace
+
+Copilot CLI **recognizes files in the directory where it's launched**.  
+Start by creating a dedicated working folder:
+
+```bash
+mkdir ~/workspace/my-project
+cd ~/workspace/my-project
+copilot
+```
+
+> 💡 **Tip**: Set up aliases for quick access:
+> ```bash
+> # Add to ~/.zshrc or ~/.bashrc
+> alias ws='cd ~/workspace'
+> alias co='copilot'
+> ```
+> Then just type `ws` → `co` to jump to your workspace and launch Copilot.
+
+### Mode Switching — `Shift+Tab`
+
+Copilot CLI has two modes. Switch with `Shift+Tab`:
+
+| Mode | Description | When to Use |
+|---|---|---|
+| **Interactive** | Step-by-step with confirmation | When you want careful control over changes |
+| **Plan** | Creates a plan, then executes at once | For large implementation tasks |
+
+> 🔑 **Plan Mode Tip**: Say "I want to build X" and Copilot will propose a plan → approve it → auto-implements everything. This dashboard was built using Plan mode.
+
+### Model Selection — `/model`
+
+```
+/model
+```
+
+Choose your AI model. Characteristics:
+
+| Model | Best For |
+|---|---|
+| **Claude Sonnet** | Default. Balanced. Great for everyday coding |
+| **Claude Opus** | Highest quality. Complex analysis or large refactors |
+| **GPT-5** | OpenAI family. When you want a different perspective |
+
+> 💡 **Tip**: Use Opus for complex tasks, Sonnet for daily work.
+
+### Essential Commands
+
+| Command | Description |
+|---|---|
+| `/help` | Show all available commands |
+| `/model` | Switch AI model |
+| `/diff` | Review current changes |
+| `/review` | Launch code review agent |
+| `/share` | Save session as Markdown or Gist |
+| `/compact` | Summarize conversation to save context |
+| `/delegate` | Hand off work to GitHub Copilot (creates PR) |
+| `/tasks` | Manage background tasks |
+| `/context` | Check token usage |
+
+### Referencing Files — `@` Mentions
+
+Use `@filename` in your prompt to include file contents in context:
+
+```
+@data.csv Analyze this CSV and build a dashboard
+```
+
+### Practical Workflow Example
+
+```bash
+# 1. Navigate to your workspace
+cd ~/workspace/my-dashboard
+
+# 2. Place your data file
+cp ~/Downloads/data.csv .
+
+# 3. Launch Copilot
+copilot
+
+# 4. Press Shift+Tab to switch to Plan mode
+
+# 5. Give your instruction
+# "@data.csv Analyze this and create an interactive HTML dashboard
+#  using Chart.js. Make it responsive."
+
+# 6. Review the plan → approve → auto-implementation
+
+# 7. Check the result
+open index.html
+
+# 8. Iterate with follow-up instructions
+# "Make the UI cooler" "Add a demo mode" "Add dark mode"
+```
+
+### Additional Tips
+
+- **Experimental mode**: Launch with `copilot --experimental` to access cutting-edge features like Autopilot
+- **Shell commands**: Prefix with `!` (e.g., `!ls`) to run shell commands directly without going through Copilot
+- **External editor**: Press `Ctrl+G` to edit long prompts in your preferred editor
+- **Custom instructions**: Place `CLAUDE.md` or `.github/copilot-instructions.md` in your repo to give Copilot persistent context about your project
