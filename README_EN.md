@@ -215,8 +215,9 @@ copilot
 > # Add to ~/.zshrc or ~/.bashrc (one-time setup)
 > alias ws='cd ~/workspace'
 > alias co='copilot'
+> alias wsco='cd ~/workspace && copilot'  # navigate + launch in one shot
 > ```
-> After this, just type `ws` to jump to your workspace, and `co` to launch Copilot.
+> `ws` to navigate, `co` to launch, or `wsco` to do both at once.
 
 ### Mode Switching — `Shift+Tab` (This changes everything)
 

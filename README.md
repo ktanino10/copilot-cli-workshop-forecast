@@ -215,8 +215,9 @@ copilot
 > # ~/.zshrc または ~/.bashrc に以下を追加（1回だけ）
 > alias ws='cd ~/workspace'
 > alias co='copilot'
+> alias wsco='cd ~/workspace && copilot'  # 移動+起動を一発で
 > ```
-> 設定後は、ターミナルで `ws` と打てば workspace に移動、`co` と打てば Copilot が起動します。
+> `ws` で移動、`co` で起動、`wsco` なら一発で移動＆起動。
 
 ### モード切替 — `Shift+Tab`（これを知っているかで効率が激変）
 
