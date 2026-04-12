@@ -166,6 +166,12 @@ last_name,company,title,domain,registered_at,utm_source,utm_medium,utm_campaign,
 
 A guide for anyone who wants to build projects like this dashboard.
 
+### What Is GitHub Copilot CLI?
+
+It's an **AI assistant that runs in your terminal (command line)**.  
+You simply tell it what you want in plain language — "build me a dashboard" — and it writes code, creates files, and runs commands for you.  
+The biggest advantage: **you don't need programming knowledge**. Just describe what you want, and it builds it.
+
 ### Installation
 
 ```bash
@@ -178,104 +184,128 @@ winget install GitHub.Copilot
 
 > Prerequisite: An active [GitHub Copilot subscription](https://github.com/features/copilot/plans) is required.
 
-### Set Up Your Workspace
+### How to Launch
 
-Copilot CLI **recognizes files in the directory where it's launched**.  
-Start by creating a dedicated working folder:
+Open your terminal (macOS: "Terminal.app", Windows: "PowerShell") and type:
 
 ```bash
-mkdir ~/workspace/my-project
-cd ~/workspace/my-project
 copilot
 ```
 
-> 💡 **Tip**: Set up aliases for quick access:
+That's it. On first launch, you'll be asked to log in with your GitHub account.
+
+### Prepare Your Workspace (Important!)
+
+Copilot CLI **can read files in the folder where it's launched**.  
+This means you need to launch it from the folder that contains your data and project files.
+
+```bash
+# 1. Create a working folder
+mkdir ~/workspace/my-project
+
+# 2. Navigate to that folder
+cd ~/workspace/my-project
+
+# 3. Launch Copilot here
+copilot
+```
+
+> 💡 **Tired of navigating every time?** Set up shortcuts (aliases):
 > ```bash
-> # Add to ~/.zshrc or ~/.bashrc
+> # Add to ~/.zshrc or ~/.bashrc (one-time setup)
 > alias ws='cd ~/workspace'
 > alias co='copilot'
 > ```
-> Then just type `ws` → `co` to jump to your workspace and launch Copilot.
+> After this, just type `ws` to jump to your workspace, and `co` to launch Copilot.
 
-### Mode Switching — `Shift+Tab`
+### Mode Switching — `Shift+Tab` (This changes everything)
 
-Copilot CLI has two modes. Switch with `Shift+Tab`:
+Copilot CLI has **two modes**. Press `Shift+Tab` on your keyboard to switch:
 
-| Mode | Description | When to Use |
+| Mode | How It Works | When to Use |
 |---|---|---|
-| **Interactive** | Step-by-step with confirmation | When you want careful control over changes |
-| **Plan** | Creates a plan, then executes at once | For large implementation tasks |
+| **Interactive** | Does one thing at a time, asks "is this OK?" after each step | Small fixes, or when you want to review each change carefully |
+| **Plan** | First shows you "here's my plan". After you approve, it builds everything at once | Building dashboards, apps, or anything with multiple steps |
 
-> 🔑 **Plan Mode Tip**: Say "I want to build X" and Copilot will propose a plan → approve it → auto-implements everything. This dashboard was built using Plan mode.
+> 🔑 **Plan Mode Tip**: Say "I want to build X" and Copilot proposes a step-by-step plan → review it → approve → it auto-implements everything. This dashboard was built entirely in Plan mode.
 
-### Model Selection — `/model`
+### Model Selection — `/model` (Choose the AI's "brain")
 
-```
-/model
-```
+Copilot CLI lets you **choose which AI model (brain) powers it**.  
+Type `/model` during a session to see the selection screen:
 
-Choose your AI model. Characteristics:
+| Model | In Plain Terms | When to Use |
+|---|---|---|
+| **Claude Sonnet** | The standard model (default) | Everyday tasks. Fast and well-balanced |
+| **Claude Opus** | The most powerful, highest-quality model | Complex analysis, large code changes, hard problems |
+| **GPT-5** | OpenAI's model | When you want a different approach from Claude |
 
-| Model | Best For |
+> 💡 **How to choose**: Sonnet for daily work, Opus for critical tasks. GPT-5 as a second opinion when Claude's answer doesn't feel right.
+
+### Useful Commands (`/` Slash Commands)
+
+During a conversation, type commands starting with `/` to access special features:
+
+| Command | What It Does |
 |---|---|
-| **Claude Sonnet** | Default. Balanced. Great for everyday coding |
-| **Claude Opus** | Highest quality. Complex analysis or large refactors |
-| **GPT-5** | OpenAI family. When you want a different perspective |
-
-> 💡 **Tip**: Use Opus for complex tasks, Sonnet for daily work.
-
-### Essential Commands
-
-| Command | Description |
-|---|---|
-| `/help` | Show all available commands |
-| `/model` | Switch AI model |
-| `/diff` | Review current changes |
-| `/review` | Launch code review agent |
-| `/share` | Save session as Markdown or Gist |
-| `/compact` | Summarize conversation to save context |
-| `/delegate` | Hand off work to GitHub Copilot (creates PR) |
-| `/tasks` | Manage background tasks |
-| `/context` | Check token usage |
+| `/help` | Shows all available commands. Start here when lost |
+| `/model` | Switch the AI model (brain). See the table above |
+| `/diff` | Shows exactly which files Copilot changed and how. Great for reviewing before committing |
+| `/review` | Launches a dedicated code review AI. Automatically finds bugs and security issues in your code |
+| `/share` | Saves your conversation as a Markdown file or GitHub Gist. Useful for documentation or sharing with teammates |
+| `/compact` | Summarizes a long conversation. Helps the AI remember earlier context without running out of memory |
+| `/delegate` | Hands off your work to GitHub's cloud Copilot. It automatically creates a Pull Request for you |
+| `/tasks` | Checks the status of background tasks (tests, builds running in the background) |
+| `/context` | Shows how much of the AI's memory (tokens) you've used in the current session |
 
 ### Referencing Files — `@` Mentions
 
-Use `@filename` in your prompt to include file contents in context:
+Add `@filename` in your prompt to **show the AI the contents of that file**:
 
 ```
 @data.csv Analyze this CSV and build a dashboard
 ```
 
-### Practical Workflow Example
+This lets the AI understand your file structure and data before working on it.  
+You can even pass image files (`@photo.png`) and say "use this image to create X".
+
+### Practical Workflow Example (How This Dashboard Was Built)
 
 ```bash
-# 1. Navigate to your workspace
+# 1. Navigate to your working folder
 cd ~/workspace/my-dashboard
 
-# 2. Place your data file
+# 2. Put your data file in the folder
 cp ~/Downloads/data.csv .
 
 # 3. Launch Copilot
 copilot
 
 # 4. Press Shift+Tab to switch to Plan mode
+#    (the display should change to "plan")
 
-# 5. Give your instruction
-# "@data.csv Analyze this and create an interactive HTML dashboard
-#  using Chart.js. Make it responsive."
+# 5. Tell it what you want, in plain language
+# "@data.csv Analyze this and create an interactive HTML dashboard.
+#  Use Chart.js, make it responsive."
 
-# 6. Review the plan → approve → auto-implementation
+# 6. Copilot shows its plan → review it → approve
+#    → AI generates all the files automatically!
 
-# 7. Check the result
+# 7. Open the result in your browser
 open index.html
 
-# 8. Iterate with follow-up instructions
-# "Make the UI cooler" "Add a demo mode" "Add dark mode"
+# 8. Want to improve it? Just give more instructions
+# "Make the UI cooler"
+# "Add a demo mode"
+# "Support English too"
+# → You can iterate and evolve it through conversation
 ```
 
 ### Additional Tips
 
-- **Experimental mode**: Launch with `copilot --experimental` to access cutting-edge features like Autopilot
-- **Shell commands**: Prefix with `!` (e.g., `!ls`) to run shell commands directly without going through Copilot
-- **External editor**: Press `Ctrl+G` to edit long prompts in your preferred editor
-- **Custom instructions**: Place `CLAUDE.md` or `.github/copilot-instructions.md` in your repo to give Copilot persistent context about your project
+| Action | What It Does |
+|---|---|
+| `copilot --experimental` | Launches with cutting-edge experimental features like Autopilot mode — a mode where Copilot keeps working until the task is fully complete, without stopping to ask |
+| `!ls` (prefix with `!`) | Runs a shell command directly, bypassing Copilot. Useful for quick checks like `!ls` (list files) or `!git status` |
+| `Ctrl+G` | Opens your preferred text editor for writing long prompts. Save and close to send the text to Copilot |
+| `CLAUDE.md` file | Place this file in your project root. Copilot reads it automatically every time. Write project-wide rules like "use TypeScript" or "follow this coding style" |
