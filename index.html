@@ -710,7 +710,7 @@ body.lang-switching .kpi-card {
     <button class="demo-btn" id="demoBtn">🎭 <span data-i18n="demo_off">DEMO OFF</span></button>
     <div class="demo-badge hidden" id="demoBadge">⚠ DEMO MODE</div>
     <div class="event-date-group">
-      <span class="event-date-label" data-i18n="event_date_label">EVENT DATE</span>
+      <label for="eventDateInput" class="event-date-label" data-i18n="event_date_label">EVENT DATE</label>
       <input type="date" class="event-date-input" id="eventDateInput" value="2026-04-17">
     </div>
     <h1 data-i18n="title">GitHub Workshop 登録者予測ダッシュボード</h1>
@@ -1438,7 +1438,9 @@ document.getElementById('changeCsvBtn').addEventListener('click', () => {
 
 // Event date change
 document.getElementById('eventDateInput').addEventListener('change', e => {
-  EVENT_DATE = e.target.value;
+  const val = e.target.value;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(val)) return;
+  EVENT_DATE = val;
   localStorage.setItem('forecast_event_date', EVENT_DATE);
   if (window._dashData) renderDashboard(window._dashData.rows, window._dashData.filename);
 });
@@ -1446,7 +1448,7 @@ document.getElementById('eventDateInput').addEventListener('change', e => {
 // ==== On page load: check localStorage ====
 (function init() {
   const savedDate = localStorage.getItem('forecast_event_date');
-  if (savedDate) {
+  if (savedDate && /^\d{4}-\d{2}-\d{2}$/.test(savedDate)) {
     EVENT_DATE = savedDate;
     document.getElementById('eventDateInput').value = savedDate;
   }
