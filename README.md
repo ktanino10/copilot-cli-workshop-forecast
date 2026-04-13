@@ -1,8 +1,11 @@
 # 📊 copilot-cli-workshop-forecast
 
-> **GitHub Copilot CLI** で作成したワークショップ集客予測ダッシュボード
+> **GitHub Copilot CLI** で作成したワークショップ集客予測ダッシュボード  
+> A workshop registration forecast dashboard — **Built entirely with GitHub Copilot CLI**
 
-### 🌐 [▶ ダッシュボードを開く（GitHub Pages）](https://ktanino10.github.io/copilot-cli-workshop-forecast/)
+### 🌐 [▶ ダッシュボードを開く / Open Dashboard（GitHub Pages）](https://ktanino10.github.io/copilot-cli-workshop-forecast/)
+
+📖 **[English README →](README_EN.md)**
 
 ![Copilot CLI](https://img.shields.io/badge/Built_with-Copilot_CLI-8b5cf6?style=for-the-badge&labelColor=0a0a0c)
 ![Status](https://img.shields.io/badge/Status-ONLINE-00ffd5?style=for-the-badge&labelColor=0a0a0c)
@@ -110,6 +113,7 @@ open index.html    # macOS
 | 📅 **EVENT DATE** | イベント日を変更（予測が自動再計算） |
 | ⌨️ `en` キー入力 | 英語モードに切替（ラバーダッキー🦆 モナ🐙 コパイロット✨ が登場） |
 | ⌨️ `jp` キー入力 | 日本語モードに切替 |
+| 🌐 **EN / JP** ボタン | ヘッダーのボタンで言語切替（マスコット演出付き） |
 
 ---
 

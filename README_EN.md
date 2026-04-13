@@ -110,6 +110,7 @@ open index.html    # macOS
 | 📅 **EVENT DATE** | Change the target event date (forecast auto-recalculates) |
 | ⌨️ Type `en` | Switch to English (Rubber Ducky 🦆 Mona 🐙 Copilot ✨ appear) |
 | ⌨️ Type `jp` | Switch to Japanese |
+| 🌐 **EN / JP** button | Toggle language via header button (with mascot animation) |
 
 ---
 
